@@ -78,12 +78,15 @@
     to { transform: translateY(110dvh) rotate(720deg); opacity: .9; }
   }
 
-  /* ===== Floating plane on welcome ===== */
+  /* ===== Swinging mirror on welcome ===== */
   @keyframes floaty {
-    0%,100% { transform: translateY(0) rotate(-4deg); }
-    50% { transform: translateY(-12px) rotate(4deg); }
+    0%   { transform: translateY(0) rotate(-12deg) scale(1); }
+    25%  { transform: translateY(-22px) rotate(10deg) scale(1.08); }
+    50%  { transform: translateY(-6px) rotate(-14deg) scale(1); }
+    75%  { transform: translateY(-26px) rotate(12deg) scale(1.1); }
+    100% { transform: translateY(0) rotate(-12deg) scale(1); }
   }
-  .floaty { animation: floaty 3.5s ease-in-out infinite; display: inline-block; }
+  .floaty { animation: floaty 3s ease-in-out infinite; display: inline-block; }
 
   @keyframes bounceIn {
     0% { transform: scale(.4); opacity: 0; }
@@ -102,10 +105,10 @@
   <!-- ===== Progress bar (V I S A) ===== -->
   <div id="progress" class="hidden-important pt-6 pb-2">
     <div class="flex justify-center gap-3">
-      <div id="prog-0" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">V</div>
-      <div id="prog-1" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">I</div>
-      <div id="prog-2" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">S</div>
-      <div id="prog-3" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">A</div>
+      <div id="prog-0" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">?</div>
+      <div id="prog-1" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">?</div>
+      <div id="prog-2" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">?</div>
+      <div id="prog-3" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">?</div>
     </div>
   </div>
 
@@ -165,30 +168,30 @@ const riddles = [
   {
     letter: 'V',
     title: 'Level 1',
-    emoji: '🕊️',
-    text: 'Zugvögel fliegen in meiner Formation in den Süden. Ohne mich gäbe es kein Visum, keinen Vulkan – und weder Venedig noch Vancouver auf der Landkarte. Welcher Buchstabe bin ich?',
-    hint: 'Schau in den Himmel, wenn die Vögel gen Süden ziehen… 🐦'
+    emoji: '✌️',
+    text: 'Streckst du zwei Finger in die Luft, stehe ich für Sieg und Frieden auf jedem Urlaubsfoto. Bei den alten Römern zählte ich als Fünf. Und wenn Zugvögel gen Süden ziehen, malen sie mich an den Himmel. Welcher Buchstabe bin ich?',
+    hint: 'Schau auf deine Finger beim Peace-Zeichen… ✌️'
   },
   {
     letter: 'I',
     title: 'Level 2',
-    emoji: '🤏',
-    text: 'Ich bin der schlankste Reisende im ganzen Alphabet – ich passe in jedes Handgepäck. Auf Englisch bin ich einfach nur „ich“, und ohne mich wäre Italien bloß „Talen“. Wer bin ich?',
-    hint: 'Denk an das englische Wort für „ich“… 🇬🇧'
+    emoji: '👆',
+    text: 'Auf Englisch rede ich immer nur von mir selbst. Auf einer römischen Uhr bin ich die Eins. Und klein geschrieben bin ich der Einzige im Alphabet, der einen Punkt als Hut trägt. Wer bin ich?',
+    hint: 'Wie sagt ein Engländer „ich“? 🇬🇧'
   },
   {
     letter: 'S',
     title: 'Level 3',
-    emoji: '🐍',
-    text: 'Ich schlängle mich wie eine Serpentinenstraße durch die Berge und zische wie die Wellen am Strand. Malt man zwei Striche durch meinen Bauch, werde ich zu Geld für die Reisekasse ($). Welcher Buchstabe bin ich?',
-    hint: 'Kurvig wie eine Schlange – und im Dollarzeichen versteckt… 💵'
+    emoji: '🛣️',
+    text: 'Auf der Landkarte findest du mich als kurvige Passstraße, die sich den Berg hinaufwindet. Male zwei senkrechte Striche durch meinen Bauch, und ich verwandle mich in die bekannteste Reisewährung der Welt. Welcher Buchstabe bin ich?',
+    hint: 'Denk ans Dollarzeichen – was bleibt ohne die Striche übrig? 💵'
   },
   {
     letter: 'A',
     title: 'Level 4',
     emoji: '⛺',
-    text: 'Ich sehe aus wie ein Zelt mit Querstange – perfekt fürs Camping. Ich stehe am Anfang von jedem Abenteuer, jeder Abreise und jeder Ankunft. Welcher Buchstabe bin ich?',
-    hint: 'Der allererste im Alphabet – und im Zelt versteckt… 🏕️'
+    text: 'Auf dem Campingplatz stehe ich als Zelt mit Querstange. Im Alphabet dränge ich mich immer ganz nach vorne. Und in amerikanischen Schulen bin ich die Note, über die sich alle freuen. Welcher Buchstabe bin ich?',
+    hint: 'Wer steht im Alphabet ganz vorne in der Schlange? 🔤'
   }
 ];
 
@@ -201,7 +204,7 @@ riddles.forEach((r, i) => {
   sec.innerHTML = `
     <p class="text-sm font-extrabold tracking-widest uppercase text-violet-400">${r.title} von 4</p>
     <div class="text-5xl">${r.emoji}</div>
-    <h2 class="text-2xl font-black text-slate-700">Gesucht: Buchstabe ${i + 1} von V·I·S·A</h2>
+    <h2 class="text-2xl font-black text-slate-700">Gesucht: Geheimer Buchstabe Nr. ${i + 1}</h2>
 
     <div class="bg-white/85 backdrop-blur rounded-3xl shadow-lg shadow-violet-100 p-6">
       <p class="text-[11px] font-bold text-violet-300 uppercase tracking-widest mb-3">🪞 Nur im Spiegel lesbar</p>
@@ -232,6 +235,41 @@ function goTo(id) {
   if (input) setTimeout(() => input.focus(), 450);
 }
 
+/* ================= Sound effects (Web Audio) ================= */
+let audioCtx = null;
+function ctx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function tone(freq, start, dur, type = 'sine', vol = 0.25) {
+  const c = ctx(), o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, c.currentTime + start);
+  g.gain.linearRampToValueAtTime(vol, c.currentTime + start + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(c.currentTime + start); o.stop(c.currentTime + start + dur + 0.05);
+}
+// fröhliches "Buchstabe gefunden!"-Glockenspiel
+function playSuccess() {
+  tone(523.25, 0,    .18, 'triangle'); // C5
+  tone(659.25, .12,  .18, 'triangle'); // E5
+  tone(783.99, .24,  .22, 'triangle'); // G5
+  tone(1046.5, .36,  .45, 'triangle', .3); // C6
+}
+// sanfter "leider falsch"-Wobble
+function playError() {
+  tone(220, 0,   .15, 'sawtooth', .12);
+  tone(174, .14, .25, 'sawtooth', .12);
+}
+// große Fanfare fürs Finale
+function playFanfare() {
+  const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5];
+  notes.forEach((f, k) => tone(f, k * .13, .3, 'triangle', .28));
+  tone(261.63, 0, 1.1, 'sine', .15); // Bass-Teppich
+}
+
 /* ================= Answer checking ================= */
 const norm = s => s.trim().toLowerCase()
   .replace(/ü/g, 'ue').replace(/ö/g, 'oe').replace(/ä/g, 'ae').replace(/ß/g, 'ss')
@@ -249,19 +287,22 @@ function checkAnswer(i) {
 
   if (accepted.includes(answer) || answer === letter) {
     // correct!
+    playSuccess();
     input.classList.add('correct-glow');
     feedback.classList.remove('text-rose-500');
     feedback.classList.add('text-emerald-500');
     feedback.textContent = 'Richtig! ✨ „' + riddles[i].letter + '“ ist freigeschaltet!';
     const prog = document.getElementById('prog-' + i);
+    prog.textContent = riddles[i].letter; // Buchstabe erst jetzt enthüllen
     prog.classList.add('letter-unlocked');
     burstConfetti(20);
     setTimeout(() => {
       goTo(i < 3 ? 'screen-level-' + (i + 1) : 'screen-finale');
-      if (i === 3) bigConfetti();
+      if (i === 3) { bigConfetti(); playFanfare(); }
     }, 1400);
   } else {
     wrongCount[i]++;
+    playError();
     input.classList.remove('shake');
     void input.offsetWidth; // restart animation
     input.classList.add('shake');
@@ -282,9 +323,11 @@ function checkFinale() {
   if (ok.includes(a)) {
     document.getElementById('finale-form').classList.add('hidden-important');
     document.getElementById('finale-success').classList.remove('hidden-important');
+    playFanfare();
     bigConfetti();
-    setTimeout(bigConfetti, 900);
+    setTimeout(() => { bigConfetti(); playFanfare(); }, 900);
   } else {
+    playError();
     input.classList.remove('shake');
     void input.offsetWidth;
     input.classList.add('shake');
