@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Das VISA-Rätsel ✈️</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+  * { font-family: 'Nunito', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: linear-gradient(160deg, #fdf2f8 0%, #ede9fe 35%, #dbeafe 70%, #cffafe 100%);
+    min-height: 100dvh;
+  }
+
+  /* ===== Mirror effect: only riddle text ===== */
+  .mirror {
+    transform: scaleX(-1);
+    display: block;
+  }
+
+  /* ===== Screen transitions ===== */
+  .screen { display: none; }
+  .screen.active {
+    display: flex;
+    animation: fadeInUp .55s ease both;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== Wrong answer shake ===== */
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+  .shake { animation: shake .45s ease; }
+
+  /* ===== Letter unlock pop ===== */
+  @keyframes pop {
+    0%   { transform: scale(0.3); opacity: 0; }
+    60%  { transform: scale(1.25); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .letter-unlocked {
+    background: linear-gradient(135deg, #a78bfa, #60a5fa) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 18px rgba(96,165,250,.45);
+    animation: pop .6s cubic-bezier(.2,1.4,.4,1) both;
+  }
+
+  /* ===== Success flash on correct answer ===== */
+  @keyframes glowPulse {
+    0% { box-shadow: 0 0 0 0 rgba(52,211,153,.6); }
+    100% { box-shadow: 0 0 0 22px rgba(52,211,153,0); }
+  }
+  .correct-glow { animation: glowPulse .8s ease-out; border-color: #34d399 !important; }
+
+  /* ===== Confetti ===== */
+  .confetti-piece {
+    position: fixed;
+    top: -14px;
+    width: 10px;
+    height: 16px;
+    border-radius: 3px;
+    z-index: 60;
+    pointer-events: none;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(110dvh) rotate(720deg); opacity: .9; }
+  }
+
+  /* ===== Floating plane on welcome ===== */
+  @keyframes floaty {
+    0%,100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-12px) rotate(4deg); }
+  }
+  .floaty { animation: floaty 3.5s ease-in-out infinite; display: inline-block; }
+
+  @keyframes bounceIn {
+    0% { transform: scale(.4); opacity: 0; }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .bounce-in { animation: bounceIn .7s cubic-bezier(.2,1.4,.4,1) both; }
+
+  .hidden-important { display: none !important; }
+</style>
+</head>
+<body class="text-slate-800">
+
+<div class="max-w-md mx-auto px-5 pb-10 min-h-dvh flex flex-col">
+
+  <!-- ===== Progress bar (V I S A) ===== -->
+  <div id="progress" class="hidden-important pt-6 pb-2">
+    <div class="flex justify-center gap-3">
+      <div id="prog-0" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">V</div>
+      <div id="prog-1" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">I</div>
+      <div id="prog-2" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">S</div>
+      <div id="prog-3" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">A</div>
+    </div>
+  </div>
+
+  <!-- ===== Screen 1: Welcome ===== -->
+  <section id="screen-welcome" class="screen active flex-col items-center justify-center text-center flex-1 gap-6 py-10">
+    <div class="text-7xl floaty">🪞</div>
+    <h1 class="text-4xl font-black bg-gradient-to-r from-violet-500 via-fuchsia-500 to-sky-500 bg-clip-text text-transparent leading-tight">Das geheime<br>Reise-Rätsel</h1>
+    <div class="bg-white/80 backdrop-blur rounded-3xl shadow-lg shadow-violet-100 p-6 space-y-3">
+      <p class="text-lg font-bold">Halt dein Handy vor einen Spiegel, um das Rätsel zu starten! 🪞📱</p>
+      <p class="text-sm text-slate-500">Die Rätseltexte sind spiegelverkehrt – nur im Spiegel kannst du sie bequem lesen. Tippen &amp; Knöpfe drücken kannst du ganz normal.</p>
+    </div>
+    <p class="text-sm font-semibold text-violet-400 tracking-widest uppercase">4 Buchstaben · 1 Ziel · ∞ Fernweh</p>
+    <button onclick="goTo('screen-level-0')" class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-violet-500 to-sky-500 shadow-xl shadow-violet-200 active:scale-95 transition-transform">Los geht's ✈️</button>
+  </section>
+
+  <!-- ===== Screens 2–5: Riddles (built by JS) ===== -->
+  <div id="levels"></div>
+
+  <!-- ===== Screen 6: Finale ===== -->
+  <section id="screen-finale" class="screen flex-col items-center text-center flex-1 gap-5 pt-10">
+    <div class="text-6xl bounce-in">🎉</div>
+    <h2 class="text-4xl font-black bg-gradient-to-r from-amber-400 via-rose-400 to-violet-500 bg-clip-text text-transparent">V · I · S · A</h2>
+    <p class="text-lg font-bold">Du hast alle Buchstaben geknackt!</p>
+
+    <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-rose-100 p-6 space-y-4 text-left">
+      <p class="text-base font-extrabold text-center text-rose-500 uppercase tracking-wide">✈️ Ihr fliegt in den Urlaub! ✈️</p>
+      <p class="text-base leading-relaxed">
+        <span class="font-bold">Tipp für das Land:</span> Es ist eines der wenigen NATO-Länder, für das man ein <span class="font-black text-violet-600">VISA</span> braucht (wie England, USA, Kanada)…
+      </p>
+      <p class="text-xl font-black text-center">Wo geht es hin? 🌍</p>
+    </div>
+
+    <div id="finale-form" class="w-full space-y-3">
+      <input id="finale-input" type="text" autocomplete="off" autocapitalize="off"
+        placeholder="Dein Reiseziel…"
+        class="w-full text-center text-xl font-bold py-4 rounded-2xl border-2 border-violet-200 bg-white/90 focus:outline-none focus:border-violet-400 shadow-inner placeholder:text-slate-300 transition-all" />
+      <button onclick="checkFinale()" class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-rose-400 to-violet-500 shadow-xl shadow-rose-200 active:scale-95 transition-transform">Prüfen 🔎</button>
+      <p id="finale-feedback" class="text-sm font-bold text-rose-500 min-h-5"></p>
+    </div>
+
+    <!-- Final success -->
+    <div id="finale-success" class="hidden-important w-full">
+      <div class="bounce-in bg-gradient-to-br from-emerald-400 to-sky-500 rounded-3xl shadow-2xl shadow-emerald-200 p-8 text-white space-y-3">
+        <div class="text-6xl">✈️🌍</div>
+        <p class="text-4xl font-black">Gute Reise!</p>
+        <p class="text-xl font-bold">Es geht in die Türkei! 🇹🇷</p>
+        <p class="text-sm opacity-90">Sonne, Meer, Baklava &amp; Abenteuer warten. Koffer packen! 🧳</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ================= Riddle data ================= */
+const riddles = [
+  {
+    letter: 'V',
+    title: 'Level 1',
+    emoji: '🕊️',
+    text: 'Zugvögel fliegen in meiner Formation in den Süden. Ohne mich gäbe es kein Visum, keinen Vulkan – und weder Venedig noch Vancouver auf der Landkarte. Welcher Buchstabe bin ich?',
+    hint: 'Schau in den Himmel, wenn die Vögel gen Süden ziehen… 🐦'
+  },
+  {
+    letter: 'I',
+    title: 'Level 2',
+    emoji: '🤏',
+    text: 'Ich bin der schlankste Reisende im ganzen Alphabet – ich passe in jedes Handgepäck. Auf Englisch bin ich einfach nur „ich“, und ohne mich wäre Italien bloß „Talen“. Wer bin ich?',
+    hint: 'Denk an das englische Wort für „ich“… 🇬🇧'
+  },
+  {
+    letter: 'S',
+    title: 'Level 3',
+    emoji: '🐍',
+    text: 'Ich schlängle mich wie eine Serpentinenstraße durch die Berge und zische wie die Wellen am Strand. Malt man zwei Striche durch meinen Bauch, werde ich zu Geld für die Reisekasse ($). Welcher Buchstabe bin ich?',
+    hint: 'Kurvig wie eine Schlange – und im Dollarzeichen versteckt… 💵'
+  },
+  {
+    letter: 'A',
+    title: 'Level 4',
+    emoji: '⛺',
+    text: 'Ich sehe aus wie ein Zelt mit Querstange – perfekt fürs Camping. Ich stehe am Anfang von jedem Abenteuer, jeder Abreise und jeder Ankunft. Welcher Buchstabe bin ich?',
+    hint: 'Der allererste im Alphabet – und im Zelt versteckt… 🏕️'
+  }
+];
+
+/* ================= Build level screens ================= */
+const levelsRoot = document.getElementById('levels');
+riddles.forEach((r, i) => {
+  const sec = document.createElement('section');
+  sec.id = 'screen-level-' + i;
+  sec.className = 'screen flex-col flex-1 gap-5 pt-6 text-center';
+  sec.innerHTML = `
+    <p class="text-sm font-extrabold tracking-widest uppercase text-violet-400">${r.title} von 4</p>
+    <div class="text-5xl">${r.emoji}</div>
+    <h2 class="text-2xl font-black text-slate-700">Gesucht: Buchstabe ${i + 1} von V·I·S·A</h2>
+
+    <div class="bg-white/85 backdrop-blur rounded-3xl shadow-lg shadow-violet-100 p-6">
+      <p class="text-[11px] font-bold text-violet-300 uppercase tracking-widest mb-3">🪞 Nur im Spiegel lesbar</p>
+      <p class="mirror text-lg font-semibold leading-relaxed text-slate-700">${r.text}</p>
+    </div>
+
+    <div class="space-y-3">
+      <input id="input-${i}" type="text" maxlength="12" autocomplete="off" autocapitalize="off"
+        placeholder="Deine Antwort…"
+        class="w-full text-center text-2xl font-black py-4 rounded-2xl border-2 border-violet-200 bg-white/90 focus:outline-none focus:border-violet-400 shadow-inner placeholder:text-slate-300 placeholder:text-lg placeholder:font-semibold transition-all" />
+      <button onclick="checkAnswer(${i})" class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-violet-500 to-sky-500 shadow-xl shadow-violet-200 active:scale-95 transition-transform">Prüfen 🔎</button>
+      <p id="feedback-${i}" class="text-sm font-bold text-rose-500 min-h-5"></p>
+    </div>`;
+  levelsRoot.appendChild(sec);
+
+  sec.querySelector('input').addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(i); });
+});
+document.getElementById('finale-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkFinale(); });
+
+/* ================= Navigation ================= */
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  target.classList.add('active');
+  document.getElementById('progress').classList.toggle('hidden-important', id === 'screen-welcome');
+  window.scrollTo({ top: 0 });
+  const input = target.querySelector('input');
+  if (input) setTimeout(() => input.focus(), 450);
+}
+
+/* ================= Answer checking ================= */
+const norm = s => s.trim().toLowerCase()
+  .replace(/ü/g, 'ue').replace(/ö/g, 'oe').replace(/ä/g, 'ae').replace(/ß/g, 'ss')
+  .replace(/[.!?"']/g, '').replace(/\s+/g, ' ');
+
+let wrongCount = [0, 0, 0, 0];
+
+function checkAnswer(i) {
+  const input = document.getElementById('input-' + i);
+  const feedback = document.getElementById('feedback-' + i);
+  const answer = norm(input.value);
+  const letter = riddles[i].letter.toLowerCase();
+
+  const accepted = { 0: ['v'], 1: ['i', 'ich'], 2: ['s'], 3: ['a'] }[i];
+
+  if (accepted.includes(answer) || answer === letter) {
+    // correct!
+    input.classList.add('correct-glow');
+    feedback.classList.remove('text-rose-500');
+    feedback.classList.add('text-emerald-500');
+    feedback.textContent = 'Richtig! ✨ „' + riddles[i].letter + '“ ist freigeschaltet!';
+    const prog = document.getElementById('prog-' + i);
+    prog.classList.add('letter-unlocked');
+    burstConfetti(20);
+    setTimeout(() => {
+      goTo(i < 3 ? 'screen-level-' + (i + 1) : 'screen-finale');
+      if (i === 3) bigConfetti();
+    }, 1400);
+  } else {
+    wrongCount[i]++;
+    input.classList.remove('shake');
+    void input.offsetWidth; // restart animation
+    input.classList.add('shake');
+    feedback.textContent = wrongCount[i] >= 2
+      ? 'Hmm… Tipp: ' + riddles[i].hint
+      : 'Nicht ganz – schau nochmal in den Spiegel! 🪞';
+    input.select();
+  }
+}
+
+/* ================= Finale ================= */
+function checkFinale() {
+  const input = document.getElementById('finale-input');
+  const feedback = document.getElementById('finale-feedback');
+  const a = norm(input.value).replace(/^(die|the)\s+/, '');
+  const ok = ['tuerkei', 'turkei', 'turkey', 'tuerkiye', 'turkiye'];
+
+  if (ok.includes(a)) {
+    document.getElementById('finale-form').classList.add('hidden-important');
+    document.getElementById('finale-success').classList.remove('hidden-important');
+    bigConfetti();
+    setTimeout(bigConfetti, 900);
+  } else {
+    input.classList.remove('shake');
+    void input.offsetWidth;
+    input.classList.add('shake');
+    feedback.textContent = 'Fast! Denk an NATO + Visum… welches Land am Mittelmeer? 🌊';
+    input.select();
+  }
+}
+
+/* ================= Confetti ================= */
+const colors = ['#a78bfa', '#60a5fa', '#f472b6', '#fbbf24', '#34d399', '#fb7185', '#38bdf8'];
+
+function burstConfetti(n) {
+  for (let k = 0; k < n; k++) spawnPiece();
+}
+function bigConfetti() {
+  for (let k = 0; k < 90; k++) setTimeout(spawnPiece, k * 18);
+}
+function spawnPiece() {
+  const p = document.createElement('div');
+  p.className = 'confetti-piece';
+  p.style.left = Math.random() * 100 + 'vw';
+  p.style.background = colors[Math.floor(Math.random() * colors.length)];
+  p.style.animationDuration = (2 + Math.random() * 2.5) + 's';
+  p.style.width = (7 + Math.random() * 7) + 'px';
+  p.style.height = (10 + Math.random() * 10) + 'px';
+  p.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 5000);
+}
+</script>
+</body>
+</html>
