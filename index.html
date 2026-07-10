@@ -151,6 +151,17 @@
     fill: #e2e8f0;
     pointer-events: none;
   }
+  /* Nach Tipp-Freischaltung: alle noch möglichen Staaten pulsieren golden,
+     damit auch das winzige D.C. auffindbar ist */
+  @keyframes stateGlow {
+    0%, 100% { fill: #d9f2d0; }
+    50%      { fill: #fcd34d; }
+  }
+  .state.state-glow:not(.state-selected) {
+    animation: stateGlow 1.6s ease-in-out infinite;
+    stroke: #f59e0b;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, .9));
+  }
 </style>
 </head>
 <body class="text-slate-800">
@@ -668,7 +679,8 @@ function applyStateFilter(keep) {
   currentKeep = new Set(keep);
   if (!stateMapReady) return; // wird nach dem Laden der Karte nachgeholt
   d3.select('#usmap-svg').selectAll('.state')
-    .classed('state-disabled', d => !currentKeep.has(String(d.id)));
+    .classed('state-disabled', d => !currentKeep.has(String(d.id)))
+    .classed('state-glow', d => currentKeep.has(String(d.id)));
   // Falls der gerade ausgewählte Staat wegfällt: Auswahl zurücksetzen
   if (selectedState && !currentKeep.has(String(selectedState.id))) {
     selectedState = null;
