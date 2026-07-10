@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Das VISA-Rätsel ✈️</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
@@ -96,14 +98,63 @@
   .bounce-in { animation: bounceIn .7s cubic-bezier(.2,1.4,.4,1) both; }
 
   .hidden-important { display: none !important; }
+
+  /* ===== Globe ===== */
+  #globe-svg {
+    touch-action: none;      /* drag rotates the globe instead of scrolling the page */
+    cursor: grab;
+    display: block;
+  }
+  #globe-svg:active { cursor: grabbing; }
+  .country {
+    fill: #d9f2d0;
+    stroke: #ffffff;
+    stroke-width: .5;
+    transition: fill .15s ease;
+    cursor: pointer;
+  }
+  .country:hover { fill: #b9e6ab; }
+  .country.country-selected {
+    fill: url(#selGrad);
+    stroke: #fff;
+    stroke-width: 1.2;
+  }
+  .graticule {
+    fill: none;
+    stroke: rgba(255,255,255,.28);
+    stroke-width: .5;
+    pointer-events: none;
+  }
+
+  /* ===== US state map (round 2) ===== */
+  #usmap-svg {
+    touch-action: none;
+    cursor: grab;
+    display: block;
+  }
+  #usmap-svg:active { cursor: grabbing; }
+  .state {
+    fill: #d9f2d0;
+    stroke: #ffffff;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    transition: fill .15s ease;
+    cursor: pointer;
+  }
+  .state:hover { fill: #b9e6ab; }
+  .state.state-selected {
+    fill: url(#selGrad2);
+    stroke: #fff;
+    stroke-width: 1.5;
+  }
 </style>
 </head>
 <body class="text-slate-800">
 
 <div class="max-w-md mx-auto px-5 pb-10 min-h-dvh flex flex-col">
 
-  <!-- ===== Progress bar (V I S A) ===== -->
-  <div id="progress" class="hidden-important pt-6 pb-2">
+  <!-- ===== Sticky header: unlocked letters (V I S A) ===== -->
+  <div id="progress" class="hidden-important sticky top-0 z-40 -mx-5 px-5 pt-4 pb-3 bg-white/60 backdrop-blur-md border-b border-white/70 shadow-sm shadow-violet-100/60 rounded-b-3xl">
     <div class="flex justify-center gap-3">
       <div id="prog-0" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">?</div>
       <div id="prog-1" class="w-12 h-12 rounded-2xl border-2 border-violet-200 bg-white/70 backdrop-blur flex items-center justify-center text-xl font-black text-violet-300 transition-all">?</div>
@@ -128,34 +179,97 @@
   <div id="levels"></div>
 
   <!-- ===== Screen 6: Finale ===== -->
-  <section id="screen-finale" class="screen flex-col items-center text-center flex-1 gap-5 pt-10">
+  <section id="screen-finale" class="screen flex-col items-center text-center flex-1 gap-5 pt-6">
     <div class="text-6xl bounce-in">🎉</div>
     <h2 class="text-4xl font-black bg-gradient-to-r from-amber-400 via-rose-400 to-violet-500 bg-clip-text text-transparent">V · I · S · A</h2>
     <p class="text-lg font-bold">Du hast alle Buchstaben geknackt!</p>
 
-    <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-rose-100 p-6 space-y-4 text-left">
-      <p class="text-base font-extrabold text-center text-rose-500 uppercase tracking-wide">✈️ Ihr fliegt in den Urlaub! ✈️</p>
-      <p class="text-base leading-relaxed">
-        <span class="font-bold">Tipp für das Land:</span> Es ist eines der wenigen NATO-Länder, für das man ein <span class="font-black text-violet-600">VISA</span> braucht (wie England, USA, Kanada)…
-      </p>
-      <p class="text-xl font-black text-center">Wo geht es hin? 🌍</p>
+    <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-rose-100 p-5 space-y-3 text-left w-full">
+      <p class="text-base font-extrabold text-center text-rose-500 uppercase tracking-wide">🔓 Deine freigeschalteten Tipps</p>
+      <div class="flex items-center gap-3 bg-violet-50 rounded-2xl px-4 py-3">
+        <span class="text-2xl">🗣️</span>
+        <p class="font-bold text-sm leading-snug">Im Zielland spricht man <span class="font-black text-violet-600">Englisch</span>.</p>
+      </div>
+      <div class="flex items-center gap-3 bg-sky-50 rounded-2xl px-4 py-3">
+        <span class="text-2xl">🛂</span>
+        <p class="font-bold text-sm leading-snug">Von <span class="font-black text-sky-600">Österreich</span> aus braucht man ein <span class="font-black text-sky-600">VISA</span>!</p>
+      </div>
+      <p class="text-lg font-black text-center pt-1">Dreh die Weltkugel und tippe auf euer Reiseziel! 🌍</p>
     </div>
 
     <div id="finale-form" class="w-full space-y-3">
+      <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-sky-100 p-4">
+        <div class="relative">
+          <svg id="globe-svg" viewBox="0 0 360 360" class="w-full h-auto mx-auto" aria-label="Drehbare Weltkugel"></svg>
+          <div id="globe-loading" class="absolute inset-0 flex items-center justify-center">
+            <p class="text-sm font-bold text-slate-400 animate-pulse">🌍 Weltkugel wird geladen…</p>
+          </div>
+          <div class="absolute bottom-2 right-2 flex flex-col gap-2">
+            <button onclick="zoomGlobe(1.5)" aria-label="Hineinzoomen" class="w-10 h-10 rounded-full bg-white/90 shadow-md text-xl font-black text-violet-500 active:scale-90 transition-transform">＋</button>
+            <button onclick="zoomGlobe(1/1.5)" aria-label="Herauszoomen" class="w-10 h-10 rounded-full bg-white/90 shadow-md text-xl font-black text-violet-500 active:scale-90 transition-transform">－</button>
+          </div>
+        </div>
+        <p class="text-[11px] font-bold text-slate-400 mt-2">☝️ Ziehen = drehen · Tippen = auswählen · Zwei Finger = zoomen</p>
+      </div>
+
+      <div id="globe-picked" class="hidden-important w-full py-3 px-4 rounded-2xl border-2 border-violet-300 bg-white/90 shadow-inner text-lg font-black text-violet-600">
+        📍 <span id="picked-name"></span>
+      </div>
+      <button id="globe-check" onclick="checkFinale()" disabled class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-rose-400 to-violet-500 shadow-xl shadow-rose-200 active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100">Prüfen 🔎</button>
+      <p id="finale-feedback" class="text-sm font-bold text-rose-500 min-h-5"></p>
+    </div>
+
+    <!-- Round 2: pick the US state -->
+    <div id="finale-round2" class="hidden-important w-full space-y-3">
+      <div class="bounce-in bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-emerald-100 p-5 space-y-2">
+        <p class="text-2xl font-black text-emerald-500">Richtig – die USA! 🇺🇸</p>
+        <p class="font-bold">Aber wohin genau? Tippe auf den richtigen Bundesstaat!</p>
+      </div>
+      <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-sky-100 p-4">
+        <div class="relative">
+          <svg id="usmap-svg" viewBox="0 0 975 610" class="w-full h-auto mx-auto" aria-label="Karte der US-Bundesstaaten">
+            <defs>
+              <linearGradient id="selGrad2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f472b6"/>
+                <stop offset="100%" stop-color="#a78bfa"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div id="usmap-loading" class="absolute inset-0 flex items-center justify-center">
+            <p class="text-sm font-bold text-slate-400 animate-pulse">🗺️ Karte wird geladen…</p>
+          </div>
+          <div class="absolute bottom-2 right-2 flex flex-col gap-2">
+            <button onclick="zoomStateMap(1.6)" aria-label="Hineinzoomen" class="w-10 h-10 rounded-full bg-white/90 shadow-md text-xl font-black text-violet-500 active:scale-90 transition-transform">＋</button>
+            <button onclick="zoomStateMap(1/1.6)" aria-label="Herauszoomen" class="w-10 h-10 rounded-full bg-white/90 shadow-md text-xl font-black text-violet-500 active:scale-90 transition-transform">－</button>
+          </div>
+        </div>
+        <p class="text-[11px] font-bold text-slate-400 mt-2">☝️ Ziehen = verschieben · Tippen = auswählen · Zoomen hilft! 🔍</p>
+      </div>
+
+      <div id="state-picked" class="hidden-important w-full py-3 px-4 rounded-2xl border-2 border-violet-300 bg-white/90 shadow-inner text-lg font-black text-violet-600">
+        📍 <span id="state-name"></span>
+      </div>
+      <button id="state-check" onclick="checkState()" disabled class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-rose-400 to-violet-500 shadow-xl shadow-rose-200 active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100">Prüfen 🔎</button>
+      <p id="state-feedback" class="text-sm font-bold text-rose-500 min-h-5"></p>
+    </div>
+
+    <!-- Fallback if the map data can't load (no internet) -->
+    <div id="finale-fallback" class="hidden-important w-full space-y-3">
+      <p id="fallback-question" class="font-bold">In welches Land geht die Reise?</p>
       <input id="finale-input" type="text" autocomplete="off" autocapitalize="off"
         placeholder="Dein Reiseziel…"
         class="w-full text-center text-xl font-bold py-4 rounded-2xl border-2 border-violet-200 bg-white/90 focus:outline-none focus:border-violet-400 shadow-inner placeholder:text-slate-300 transition-all" />
-      <button onclick="checkFinale()" class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-rose-400 to-violet-500 shadow-xl shadow-rose-200 active:scale-95 transition-transform">Prüfen 🔎</button>
-      <p id="finale-feedback" class="text-sm font-bold text-rose-500 min-h-5"></p>
+      <button onclick="checkFinaleText()" class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-rose-400 to-violet-500 shadow-xl shadow-rose-200 active:scale-95 transition-transform">Prüfen 🔎</button>
+      <p id="fallback-feedback" class="text-sm font-bold text-rose-500 min-h-5"></p>
     </div>
 
     <!-- Final success -->
     <div id="finale-success" class="hidden-important w-full">
       <div class="bounce-in bg-gradient-to-br from-emerald-400 to-sky-500 rounded-3xl shadow-2xl shadow-emerald-200 p-8 text-white space-y-3">
-        <div class="text-6xl">✈️🌍</div>
+        <div class="text-6xl">✈️🏛️</div>
         <p class="text-4xl font-black">Gute Reise!</p>
-        <p class="text-xl font-bold">Es geht in die Türkei! 🇹🇷</p>
-        <p class="text-sm opacity-90">Sonne, Meer, Baklava &amp; Abenteuer warten. Koffer packen! 🧳</p>
+        <p class="text-xl font-bold">Es geht nach Washington D.C.! 🇺🇸</p>
+        <p class="text-sm opacity-90">Weißes Haus, Kapitol &amp; riesige Museen warten. Koffer packen! 🧳</p>
       </div>
     </div>
   </section>
@@ -222,7 +336,7 @@ riddles.forEach((r, i) => {
 
   sec.querySelector('input').addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(i); });
 });
-document.getElementById('finale-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkFinale(); });
+document.getElementById('finale-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkFinaleText(); });
 
 /* ================= Navigation ================= */
 function goTo(id) {
@@ -232,7 +346,7 @@ function goTo(id) {
   document.getElementById('progress').classList.toggle('hidden-important', id === 'screen-welcome');
   window.scrollTo({ top: 0 });
   const input = target.querySelector('input');
-  if (input) setTimeout(() => input.focus(), 450);
+  if (input && id !== 'screen-finale') setTimeout(() => input.focus(), 450);
 }
 
 /* ================= Sound effects (Web Audio) ================= */
@@ -263,6 +377,11 @@ function playError() {
   tone(220, 0,   .15, 'sawtooth', .12);
   tone(174, .14, .25, 'sawtooth', .12);
 }
+// kurzer "Land angetippt"-Plop
+function playPick() {
+  tone(660, 0, .09, 'triangle', .18);
+  tone(880, .07, .12, 'triangle', .14);
+}
 // große Fanfare fürs Finale
 function playFanfare() {
   const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5];
@@ -273,7 +392,7 @@ function playFanfare() {
 /* ================= Answer checking ================= */
 const norm = s => s.trim().toLowerCase()
   .replace(/ü/g, 'ue').replace(/ö/g, 'oe').replace(/ä/g, 'ae').replace(/ß/g, 'ss')
-  .replace(/[.!?"']/g, '').replace(/\s+/g, ' ');
+  .replace(/[.,!?"']/g, '').replace(/\s+/g, ' ');
 
 let wrongCount = [0, 0, 0, 0];
 
@@ -313,26 +432,369 @@ function checkAnswer(i) {
   }
 }
 
-/* ================= Finale ================= */
-function checkFinale() {
-  const input = document.getElementById('finale-input');
-  const feedback = document.getElementById('finale-feedback');
-  const a = norm(input.value).replace(/^(die|the)\s+/, '');
-  const ok = ['tuerkei', 'turkei', 'turkey', 'tuerkiye', 'turkiye'];
+/* ================= Globe (finale) ================= */
+// IDs im Kartenmaterial sind dreistellige ISO-Codes mit führenden Nullen ("040", "036", …)
+const TARGET_ID = '840'; // USA (ISO 3166-1 numerisch)
+const ENGLISH_IDS = ['826', '124', '036', '554', '372']; // UK, Kanada, Australien, Neuseeland, Irland
+const AUSTRIA_ID = '040';
 
-  if (ok.includes(a)) {
-    document.getElementById('finale-form').classList.add('hidden-important');
-    document.getElementById('finale-success').classList.remove('hidden-important');
-    playFanfare();
-    bigConfetti();
-    setTimeout(() => { bigConfetti(); playFanfare(); }, 900);
+// Deutsche Namen für häufige Länder (Fallback: englischer Name aus dem Kartenmaterial)
+const NAMES_DE = {
+  'United States of America': 'USA', 'United Kingdom': 'Großbritannien', 'Germany': 'Deutschland',
+  'Austria': 'Österreich', 'Switzerland': 'Schweiz', 'France': 'Frankreich', 'Spain': 'Spanien',
+  'Italy': 'Italien', 'Turkey': 'Türkei', 'Canada': 'Kanada', 'Australia': 'Australien',
+  'New Zealand': 'Neuseeland', 'Brazil': 'Brasilien', 'Mexico': 'Mexiko', 'Russia': 'Russland',
+  'India': 'Indien', 'Egypt': 'Ägypten', 'South Africa': 'Südafrika', 'Greece': 'Griechenland',
+  'Croatia': 'Kroatien', 'Netherlands': 'Niederlande', 'Belgium': 'Belgien', 'Poland': 'Polen',
+  'Czechia': 'Tschechien', 'Hungary': 'Ungarn', 'Slovakia': 'Slowakei', 'Slovenia': 'Slowenien',
+  'Denmark': 'Dänemark', 'Norway': 'Norwegen', 'Sweden': 'Schweden', 'Finland': 'Finnland',
+  'Ireland': 'Irland', 'Iceland': 'Island', 'Morocco': 'Marokko', 'Tunisia': 'Tunesien',
+  'Argentina': 'Argentinien', 'Colombia': 'Kolumbien', 'Cuba': 'Kuba', 'Indonesia': 'Indonesien',
+  'South Korea': 'Südkorea', 'North Korea': 'Nordkorea', 'Saudi Arabia': 'Saudi-Arabien',
+  'United Arab Emirates': 'Ver. Arab. Emirate', 'Romania': 'Rumänien', 'Bulgaria': 'Bulgarien',
+  'Serbia': 'Serbien', 'Bosnia and Herz.': 'Bosnien u. Herzegowina', 'Albania': 'Albanien',
+  'North Macedonia': 'Nordmazedonien', 'Luxembourg': 'Luxemburg', 'Greenland': 'Grönland',
+  'Dominican Rep.': 'Dominikanische Rep.', 'Kenya': 'Kenia', 'Ethiopia': 'Äthiopien',
+  'Algeria': 'Algerien', 'Libya': 'Libyen', 'Mongolia': 'Mongolei', 'Kazakhstan': 'Kasachstan',
+  'Philippines': 'Philippinen', 'Madagascar': 'Madagaskar', 'Lithuania': 'Litauen',
+  'Latvia': 'Lettland', 'Estonia': 'Estland', 'Moldova': 'Moldau', 'Georgia': 'Georgien',
+  'Armenia': 'Armenien', 'Azerbaijan': 'Aserbaidschan', 'Iraq': 'Irak', 'Syria': 'Syrien',
+  'Jordan': 'Jordanien', 'Lebanon': 'Libanon', 'Bangladesh': 'Bangladesch',
+  'Cambodia': 'Kambodscha', 'Fiji': 'Fidschi', 'Papua New Guinea': 'Papua-Neuguinea',
+  'Bolivia': 'Bolivien', 'Jamaica': 'Jamaika', 'Antarctica': 'Antarktis'
+};
+const nameDE = f => NAMES_DE[f.properties.name] || f.properties.name;
+
+let selectedCountry = null;
+let wrongFinale = 0;
+let globeRedraw = null;
+let globeZoomBy = null;
+
+function initGlobe() {
+  const svg = d3.select('#globe-svg');
+  const size = 360, center = size / 2, baseScale = center - 14;
+
+  const projection = d3.geoOrthographic()
+    .scale(baseScale)
+    .translate([center, center])
+    .rotate([-13, -35]) // Start: Blick auf Europa/Österreich
+    .clipAngle(90);
+  const path = d3.geoPath(projection);
+
+  // Verläufe für Ozean, Kugel-Schattierung, Auswahl und Außenglühen
+  svg.append('defs').html(`
+    <radialGradient id="oceanGrad" cx="38%" cy="32%">
+      <stop offset="0%" stop-color="#7dd3fc"/>
+      <stop offset="55%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </radialGradient>
+    <radialGradient id="shadeGrad" cx="40%" cy="35%">
+      <stop offset="0%" stop-color="rgba(255,255,255,.3)"/>
+      <stop offset="55%" stop-color="rgba(255,255,255,0)"/>
+      <stop offset="86%" stop-color="rgba(4,20,60,0)"/>
+      <stop offset="100%" stop-color="rgba(4,20,60,.32)"/>
+    </radialGradient>
+    <radialGradient id="glowGrad" cx="50%" cy="50%">
+      <stop offset="76%" stop-color="rgba(96,165,250,0)"/>
+      <stop offset="90%" stop-color="rgba(96,165,250,.4)"/>
+      <stop offset="100%" stop-color="rgba(96,165,250,0)"/>
+    </radialGradient>
+    <linearGradient id="selGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>`);
+
+  const glow = svg.append('circle')
+    .attr('cx', center).attr('cy', center)
+    .attr('fill', 'url(#glowGrad)').style('pointer-events', 'none');
+  const ocean = svg.append('circle')
+    .attr('cx', center).attr('cy', center)
+    .attr('fill', 'url(#oceanGrad)');
+  const graticule = svg.append('path')
+    .datum(d3.geoGraticule10())
+    .attr('class', 'graticule');
+  const landG = svg.append('g');
+  const shade = svg.append('circle')
+    .attr('cx', center).attr('cy', center)
+    .attr('fill', 'url(#shadeGrad)').style('pointer-events', 'none');
+
+  function redraw() {
+    const r = projection.scale();
+    ocean.attr('r', r);
+    shade.attr('r', r);
+    glow.attr('r', r * 1.12);
+    graticule.attr('d', path);
+    landG.selectAll('path').attr('d', path);
+  }
+  globeRedraw = redraw;
+  redraw();
+
+  return fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(world => {
+      const countries = topojson.feature(world, world.objects.countries).features;
+
+      // Langsame Startdrehung, stoppt bei der ersten Berührung
+      let autoTimer = d3.timer(() => {
+        const r = projection.rotate();
+        projection.rotate([r[0] + 0.12, r[1], r[2]]);
+        redraw();
+      });
+      const stopAuto = () => { if (autoTimer) { autoTimer.stop(); autoTimer = null; } };
+
+      let moved = 0; // unterscheidet Tippen von Ziehen
+
+      landG.selectAll('path')
+        .data(countries)
+        .join('path')
+        .attr('class', 'country')
+        .attr('d', path)
+        .on('click', (event, d) => {
+          if (moved > 8) return; // war eine Drehbewegung, kein Tippen
+          stopAuto();
+          selectedCountry = d;
+          landG.selectAll('path').classed('country-selected', c => c === d);
+          d3.select(event.currentTarget).raise();
+          playPick();
+          const picked = document.getElementById('globe-picked');
+          picked.classList.remove('hidden-important');
+          document.getElementById('picked-name').textContent = nameDE(d);
+          document.getElementById('globe-check').disabled = false;
+          document.getElementById('finale-feedback').textContent = '';
+        });
+
+      // Ziehen = Kugel drehen
+      const drag = d3.drag()
+        .on('start', () => { stopAuto(); moved = 0; })
+        .on('drag', (event) => {
+          if (event.sourceEvent.touches && event.sourceEvent.touches.length > 1) return; // Pinch dem Zoom überlassen
+          moved += Math.abs(event.dx) + Math.abs(event.dy);
+          const r = projection.rotate();
+          const k = 100 / projection.scale();
+          projection.rotate([
+            r[0] + event.dx * k,
+            Math.max(-90, Math.min(90, r[1] - event.dy * k)),
+            r[2]
+          ]);
+          redraw();
+        });
+      svg.call(drag);
+
+      // Scrollrad / Zwei-Finger-Pinch = zoomen
+      const zoom = d3.zoom()
+        .scaleExtent([1, 6])
+        .filter(e => e.type === 'wheel' || (e.touches && e.touches.length > 1))
+        .on('start', stopAuto)
+        .on('zoom', (e) => { projection.scale(baseScale * e.transform.k); redraw(); });
+      svg.call(zoom).on('dblclick.zoom', null);
+      globeZoomBy = f => svg.transition().duration(250).call(zoom.scaleBy, f);
+
+      document.getElementById('globe-loading').classList.add('hidden-important');
+      redraw();
+    });
+}
+
+function zoomGlobe(f) { if (globeZoomBy) globeZoomBy(f); }
+
+try {
+  initGlobe().catch(err => {
+    console.error('Globus konnte nicht geladen werden:', err);
+    showFallback();
+  });
+} catch (err) {
+  console.error('Globus konnte nicht geladen werden:', err);
+  showFallback();
+}
+
+/* ================= Round 2: US state map ================= */
+const TARGET_STATE_ID = '11'; // District of Columbia (FIPS)
+const WASHINGTON_STATE_ID = '53'; // Bundesstaat Washington (die Falle!)
+
+const STATE_NAMES_DE = {
+  'California': 'Kalifornien',
+  'District of Columbia': 'Washington D.C.'
+};
+const stateNameDE = f => STATE_NAMES_DE[f.properties.name] || f.properties.name;
+
+let selectedState = null;
+let wrongState = 0;
+let stateZoomBy = null;
+let stateMapReady = false;
+
+function initStateMap() {
+  if (stateMapReady) return Promise.resolve();
+  const svg = d3.select('#usmap-svg');
+  const g = svg.append('g');
+  const path = d3.geoPath(); // Karte ist bereits vorprojiziert (Albers USA)
+
+  return fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/states-albers-10m.json')
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(us => {
+      const states = topojson.feature(us, us.objects.states).features;
+
+      g.selectAll('path')
+        .data(states)
+        .join('path')
+        .attr('class', 'state')
+        .attr('d', path)
+        .on('click', (event, d) => {
+          selectedState = d;
+          g.selectAll('path').classed('state-selected', s => s === d);
+          d3.select(event.currentTarget).raise();
+          playPick();
+          const picked = document.getElementById('state-picked');
+          picked.classList.remove('hidden-important');
+          document.getElementById('state-name').textContent = stateNameDE(d);
+          document.getElementById('state-check').disabled = false;
+          document.getElementById('state-feedback').textContent = '';
+        });
+
+      // Ziehen = verschieben, Pinch/Rad = zoomen (D.C. ist winzig – viel Zoom erlauben!)
+      const zoom = d3.zoom()
+        .scaleExtent([1, 40])
+        .translateExtent([[0, 0], [975, 610]])
+        .on('zoom', e => g.attr('transform', e.transform));
+      svg.call(zoom).on('dblclick.zoom', null);
+      stateZoomBy = f => svg.transition().duration(250).call(zoom.scaleBy, f);
+
+      document.getElementById('usmap-loading').classList.add('hidden-important');
+      stateMapReady = true;
+    });
+}
+
+function zoomStateMap(f) { if (stateZoomBy) stateZoomBy(f); }
+
+function startRound2() {
+  playSuccess();
+  burstConfetti(40);
+  document.getElementById('finale-form').classList.add('hidden-important');
+  document.getElementById('finale-round2').classList.remove('hidden-important');
+  initStateMap().catch(err => {
+    console.error('US-Karte konnte nicht geladen werden:', err);
+    document.getElementById('finale-round2').classList.add('hidden-important');
+    showFallback(1);
+  });
+}
+
+function checkState() {
+  if (!selectedState) return;
+  const feedback = document.getElementById('state-feedback');
+  const picked = document.getElementById('state-picked');
+  const id = String(selectedState.id);
+
+  if (id === TARGET_STATE_ID) {
+    finaleSuccess();
+    return;
+  }
+
+  wrongState++;
+  playError();
+  picked.classList.remove('shake');
+  void picked.offsetWidth;
+  picked.classList.add('shake');
+
+  const name = stateNameDE(selectedState);
+  if (id === WASHINGTON_STATE_ID) {
+    feedback.textContent = 'Ha, Falle! Das ist der Bundesstaat Washington im Nordwesten – gesucht ist die Hauptstadt an der Ostküste! 🏛️';
+  } else if (wrongState >= 3) {
+    feedback.textContent = 'Es ist gar kein richtiger Bundesstaat – ein winziger Fleck an der Ostküste. Zoom ganz nah ran! 🔍';
+  } else if (wrongState >= 2) {
+    feedback.textContent = 'Tipp: Dort wohnt der US-Präsident… 🏛️';
   } else {
-    playError();
-    input.classList.remove('shake');
-    void input.offsetWidth;
-    input.classList.add('shake');
-    feedback.textContent = 'Fast! Denk an NATO + Visum… welches Land am Mittelmeer? 🌊';
-    input.select();
+    feedback.textContent = 'Nein, ' + name + ' ist es leider nicht! 🙈';
+  }
+}
+
+/* ================= Finale: Auswahl prüfen ================= */
+function finaleSuccess() {
+  document.getElementById('finale-form').classList.add('hidden-important');
+  document.getElementById('finale-round2').classList.add('hidden-important');
+  document.getElementById('finale-fallback').classList.add('hidden-important');
+  document.getElementById('finale-success').classList.remove('hidden-important');
+  playFanfare();
+  bigConfetti();
+  setTimeout(() => { bigConfetti(); playFanfare(); }, 900);
+}
+
+function checkFinale() {
+  if (!selectedCountry) return;
+  const feedback = document.getElementById('finale-feedback');
+  const picked = document.getElementById('globe-picked');
+  const id = String(selectedCountry.id);
+
+  if (id === TARGET_ID) {
+    startRound2();
+    return;
+  }
+
+  wrongFinale++;
+  playError();
+  picked.classList.remove('shake');
+  void picked.offsetWidth;
+  picked.classList.add('shake');
+
+  const name = nameDE(selectedCountry);
+  if (id === AUSTRIA_ID) {
+    feedback.textContent = 'Haha, das ist Österreich – von hier fliegt ihr ja LOS! 🛫';
+  } else if (ENGLISH_IDS.includes(id)) {
+    feedback.textContent = 'So nah! In ' + name + ' spricht man Englisch – aber es ist ein anderes Land… ✈️';
+  } else if (wrongFinale >= 3) {
+    feedback.textContent = 'Tipp: Ein riesiges Land zwischen Atlantik und Pazifik – Freiheitsstatue! 🗽';
+  } else if (wrongFinale >= 2) {
+    feedback.textContent = name + '? Denk an die Tipps: Englisch + Visum! 🛂';
+  } else {
+    feedback.textContent = 'Nein, ' + name + ' ist es leider nicht! 🙈';
+  }
+}
+
+/* ================= Fallback: Texteingabe (falls Karten nicht laden) ================= */
+let fallbackStage = 0; // 0 = Land, 1 = Bundesstaat
+
+function showFallback(stage = 0) {
+  fallbackStage = stage;
+  document.getElementById('finale-form').classList.add('hidden-important');
+  document.getElementById('finale-fallback').classList.remove('hidden-important');
+  const q = document.getElementById('fallback-question');
+  const input = document.getElementById('finale-input');
+  if (stage === 1) {
+    q.textContent = 'Richtig, die USA! 🇺🇸 Und wohin genau? (Stadt oder Bundesstaat)';
+    input.placeholder = 'Wohin genau…?';
+    input.value = '';
+    document.getElementById('fallback-feedback').textContent = '';
+  }
+}
+
+function checkFinaleText() {
+  const input = document.getElementById('finale-input');
+  const feedback = document.getElementById('fallback-feedback');
+  const a = norm(input.value).replace(/^(die|the)\s+/, '');
+
+  if (fallbackStage === 0) {
+    const ok = ['usa', 'us', 'amerika', 'america', 'vereinigte staaten', 'vereinigte staaten von amerika', 'united states', 'united states of america', 'staaten'];
+    if (ok.includes(a)) {
+      playSuccess();
+      burstConfetti(40);
+      showFallback(1);
+    } else {
+      playError();
+      input.classList.remove('shake');
+      void input.offsetWidth;
+      input.classList.add('shake');
+      feedback.textContent = 'Fast! Denk an die Tipps: Englisch + Visum von Österreich aus… 🗽';
+      input.select();
+    }
+  } else {
+    const ok = ['washington', 'washington dc', 'washington d c', 'dc', 'district of columbia'];
+    if (ok.includes(a)) {
+      finaleSuccess();
+    } else {
+      playError();
+      input.classList.remove('shake');
+      void input.offsetWidth;
+      input.classList.add('shake');
+      feedback.textContent = 'Nicht ganz! Tipp: Dort wohnt der US-Präsident… 🏛️';
+      input.select();
+    }
   }
 }
 
