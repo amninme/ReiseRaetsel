@@ -362,26 +362,6 @@ function goTo(id) {
   if (input && id !== 'screen-finale') setTimeout(() => input.focus(), 450);
 }
 
-/* ================= Sticky header vs. Handy-Tastatur ================= */
-// position:sticky klebt am Layout-Viewport. Öffnet sich die Tastatur, verschiebt
-// iOS Safari nur den sichtbaren (visuellen) Viewport – der Header wäre weg.
-// Darum: Header per Transform am visuellen Viewport festhalten.
-// (Android/Chrome braucht das nicht, dort löst es "interactive-widget=resizes-content" im Meta-Tag.)
-if (window.visualViewport) {
-  const header = document.getElementById('progress');
-  let raf = null;
-  const pinHeader = () => {
-    if (raf) return;
-    raf = requestAnimationFrame(() => {
-      raf = null;
-      const offset = window.visualViewport.offsetTop;
-      header.style.transform = offset > 1 ? `translateY(${offset}px)` : '';
-    });
-  };
-  window.visualViewport.addEventListener('resize', pinHeader);
-  window.visualViewport.addEventListener('scroll', pinHeader);
-}
-
 /* ================= Sound effects (Web Audio) ================= */
 let audioCtx = null;
 function ctx() {
