@@ -125,6 +125,16 @@
     stroke-width: .5;
     pointer-events: none;
   }
+  .country.country-disabled {
+    fill: #e2e8f0;
+    pointer-events: none;
+  }
+  /* Nach Tipp-Freischaltung pulsieren die noch möglichen Länder golden
+     (Keyframes "stateGlow" werden weiter unten definiert und hier mitbenutzt) */
+  .country.country-glow:not(.country-selected) {
+    animation: stateGlow 1.6s ease-in-out infinite;
+    stroke: #f59e0b;
+  }
 
   /* ===== US state map (round 2) ===== */
   #usmap-svg {
@@ -162,6 +172,36 @@
     stroke: #f59e0b;
     filter: drop-shadow(0 0 4px rgba(251, 191, 36, .9));
   }
+  /* D.C. ist winzig – deshalb deutlich stärker leuchten lassen als der Rest */
+  .state.state-glow-strong:not(.state-selected) {
+    filter: drop-shadow(0 0 3px rgba(245, 158, 11, 1))
+            drop-shadow(0 0 8px rgba(245, 158, 11, .9))
+            drop-shadow(0 0 16px rgba(251, 191, 36, .7));
+  }
+  /* Pulsierender "Ping"-Ring am D.C.-Standort, sichtbar egal wie klein die Fläche ist */
+  @keyframes dcPing {
+    0%   { transform: scale(.35); opacity: 1; }
+    75%  { transform: scale(1.5); opacity: 0; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  .dc-halo-ring {
+    fill: none;
+    stroke: #f59e0b;
+    stroke-width: 3;
+    pointer-events: none;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: dcPing 1.5s ease-out infinite;
+  }
+  @keyframes dcDotPulse {
+    0%, 100% { opacity: .45; }
+    50%      { opacity: .95; }
+  }
+  .dc-halo-dot {
+    fill: #fbbf24;
+    pointer-events: none;
+    animation: dcDotPulse 1.5s ease-in-out infinite;
+  }
 </style>
 </head>
 <body class="text-slate-800">
@@ -184,9 +224,9 @@
     <h1 class="text-4xl font-black bg-gradient-to-r from-violet-500 via-fuchsia-500 to-sky-500 bg-clip-text text-transparent leading-tight">Spieglein, Spieglein<br>an der Wand…</h1>
     <div class="bg-white/80 backdrop-blur rounded-3xl shadow-lg shadow-violet-100 p-6 space-y-3">
       <p class="text-lg font-bold">Halt dein Handy vor einen Spiegel, um das Rätsel zu starten! 🪞📱</p>
-      <p class="text-sm text-slate-500">Die Rätseltexte sind spiegelverkehrt – nur im Spiegel kannst du sie bequem lesen. Tippen &amp; Knöpfe drücken kannst du ganz normal.</p>
+      <p class="text-sm text-slate-500">Die Rätseltexte sind spiegelverkehrt. Nur im Spiegel kannst du sie bequem lesen. Tippen &amp; Knöpfe drücken kannst du ganz normal.</p>
     </div>
-    <p class="text-sm font-semibold text-violet-400 tracking-widest uppercase">4 Buchstaben · 1 Ziel · ∞ Fernweh</p>
+    <p class="text-sm font-semibold text-violet-400 tracking-widest uppercase">4 Buchstaben</p>
     <button onclick="goTo('screen-level-0')" class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-violet-500 to-sky-500 shadow-xl shadow-violet-200 active:scale-95 transition-transform">Los geht's ✈️</button>
   </section>
 
@@ -201,6 +241,10 @@
 
     <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-rose-100 p-5 space-y-3 text-left w-full">
       <p class="text-base font-extrabold text-center text-rose-500 uppercase tracking-wide">🔓 Deine freigeschalteten Tipps</p>
+      <div class="flex items-center gap-3 bg-emerald-50 rounded-2xl px-4 py-3">
+        <span class="text-2xl">🛡️</span>
+        <p class="font-bold text-sm leading-snug">Aus dem Rätsel davor: Es ist ein <span class="font-black text-emerald-600">NATO-Land</span>!</p>
+      </div>
       <div class="flex items-center gap-3 bg-violet-50 rounded-2xl px-4 py-3">
         <span class="text-2xl">🗣️</span>
         <p class="font-bold text-sm leading-snug">Im Zielland spricht man <span class="font-black text-violet-600">Englisch</span>.</p>
@@ -232,12 +276,20 @@
       </div>
       <button id="globe-check" onclick="checkFinale()" disabled class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-rose-400 to-violet-500 shadow-xl shadow-rose-200 active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100">Prüfen 🔎</button>
       <p id="finale-feedback" class="text-sm font-bold text-rose-500 min-h-5"></p>
+
+      <!-- Unlockable funnel hints: each one greys out the eliminated countries -->
+      <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-amber-100 p-4 space-y-2 text-left">
+        <p class="text-sm font-extrabold text-center text-amber-500 uppercase tracking-wide">💡 Detektiv-Tipps zum Freischalten</p>
+        <p class="text-xs font-semibold text-center text-slate-400">Jeder Tipp lässt nur noch die passenden Länder leuchten. Der Rest wird grau.</p>
+        <div id="globe-tips-list" class="space-y-2"></div>
+        <button id="globe-tip-unlock" onclick="unlockGlobeTip()" class="w-full py-3 rounded-2xl text-lg font-extrabold text-white bg-gradient-to-r from-amber-400 to-orange-400 shadow-lg shadow-amber-100 active:scale-95 transition-transform">Tipp 1 freischalten 🔓</button>
+      </div>
     </div>
 
     <!-- Round 2: pick the US state -->
     <div id="finale-round2" class="hidden-important w-full space-y-3">
       <div class="bounce-in bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-emerald-100 p-5 space-y-2">
-        <p class="text-2xl font-black text-emerald-500">Richtig – die USA! 🇺🇸</p>
+        <p class="text-2xl font-black text-emerald-500">Richtig, die USA! 🇺🇸</p>
         <p class="font-bold">Aber wohin genau? Tippe auf den richtigen Bundesstaat!</p>
       </div>
       <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-sky-100 p-4">
@@ -270,7 +322,7 @@
       <!-- Unlockable funnel hints: each one greys out the eliminated states -->
       <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-amber-100 p-4 space-y-2 text-left">
         <p class="text-sm font-extrabold text-center text-amber-500 uppercase tracking-wide">💡 Detektiv-Tipps zum Freischalten</p>
-        <p class="text-xs font-semibold text-center text-slate-400">Jeder Tipp grenzt die Suche ein – unmögliche Staaten werden auf der Karte grau.</p>
+        <p class="text-xs font-semibold text-center text-slate-400">Jeder Tipp grenzt die Suche ein. Unmögliche Staaten werden auf der Karte grau.</p>
         <div id="tips-list" class="space-y-2"></div>
         <button id="tip-unlock" onclick="unlockTip()" class="w-full py-3 rounded-2xl text-lg font-extrabold text-white bg-gradient-to-r from-amber-400 to-orange-400 shadow-lg shadow-amber-100 active:scale-95 transition-transform">Tipp 1 freischalten 🔓</button>
       </div>
@@ -321,7 +373,7 @@ const riddles = [
     title: 'Level 3',
     emoji: '🛣️',
     text: 'Auf der Landkarte findest du mich als kurvige Passstraße, die sich den Berg hinaufwindet. Male zwei senkrechte Striche durch meinen Bauch, und ich verwandle mich in die bekannteste Reisewährung der Welt. Welcher Buchstabe bin ich?',
-    hint: 'Denk ans Dollarzeichen – was bleibt ohne die Striche übrig? 💵'
+    hint: 'Denk ans Dollarzeichen: Was bleibt ohne die Striche übrig? 💵'
   },
   {
     letter: 'A',
@@ -450,7 +502,7 @@ function checkAnswer(i) {
     input.classList.add('shake');
     feedback.textContent = wrongCount[i] >= 2
       ? 'Hmm… Tipp: ' + riddles[i].hint
-      : 'Nicht ganz – schau nochmal in den Spiegel! 🪞';
+      : 'Nicht ganz, schau nochmal in den Spiegel! 🪞';
     input.select();
   }
 }
@@ -476,7 +528,7 @@ const NAMES_DE = {
   'South Korea': 'Südkorea', 'North Korea': 'Nordkorea', 'Saudi Arabia': 'Saudi-Arabien',
   'United Arab Emirates': 'Ver. Arab. Emirate', 'Romania': 'Rumänien', 'Bulgaria': 'Bulgarien',
   'Serbia': 'Serbien', 'Bosnia and Herz.': 'Bosnien u. Herzegowina', 'Albania': 'Albanien',
-  'North Macedonia': 'Nordmazedonien', 'Luxembourg': 'Luxemburg', 'Greenland': 'Grönland',
+  'Macedonia': 'Nordmazedonien', 'Luxembourg': 'Luxemburg', 'Greenland': 'Grönland',
   'Dominican Rep.': 'Dominikanische Rep.', 'Kenya': 'Kenia', 'Ethiopia': 'Äthiopien',
   'Algeria': 'Algerien', 'Libya': 'Libyen', 'Mongolia': 'Mongolei', 'Kazakhstan': 'Kasachstan',
   'Philippines': 'Philippinen', 'Madagascar': 'Madagaskar', 'Lithuania': 'Litauen',
@@ -492,6 +544,65 @@ let selectedCountry = null;
 let wrongFinale = 0;
 let globeRedraw = null;
 let globeZoomBy = null;
+
+/* ===== Trichter-Tipps für die Weltkugel (IDs = ISO 3166-1 numerisch, dreistellig) ===== */
+const NATO_IDS = ['008', '056', '100', '124', '191', '203', '208', '233', '246', '250', '276', '300', '348', '352', '380', '428', '440', '442', '499', '528', '578', '616', '620', '642', '703', '705', '724', '752', '792', '807', '826', '840'];
+const GLOBE_TIPS = [
+  {
+    emoji: '🛡️',
+    text: 'Es ist ein NATO-Land! Alle 32 NATO-Länder leuchten jetzt.',
+    keep: NATO_IDS
+  },
+  {
+    emoji: '🛂',
+    text: 'Von Österreich aus braucht man ein Visum bzw. eine Einreisegenehmigung. Nur noch diese Länder leuchten!',
+    // USA, Kanada, Großbritannien, Türkei
+    keep: ['840', '124', '826', '792']
+  },
+  {
+    emoji: '🗣️',
+    text: 'Im Zielland spricht man Englisch!',
+    // USA, Kanada, Großbritannien
+    keep: ['840', '124', '826']
+  }
+];
+
+let globeTipsUsed = 0;
+let globeKeep = null; // Set der aktuell noch erlaubten Länder-IDs
+
+function applyCountryFilter(keep) {
+  globeKeep = new Set(keep);
+  d3.select('#globe-svg').selectAll('.country')
+    .classed('country-disabled', d => !globeKeep.has(String(d.id)))
+    .classed('country-glow', d => globeKeep.has(String(d.id)));
+  // Falls das gerade ausgewählte Land wegfällt: Auswahl zurücksetzen
+  if (selectedCountry && !globeKeep.has(String(selectedCountry.id))) {
+    selectedCountry = null;
+    d3.select('#globe-svg').selectAll('.country').classed('country-selected', false);
+    document.getElementById('globe-picked').classList.add('hidden-important');
+    document.getElementById('globe-check').disabled = true;
+    document.getElementById('finale-feedback').textContent = '';
+  }
+}
+
+function unlockGlobeTip() {
+  if (globeTipsUsed >= GLOBE_TIPS.length) return;
+  const tip = GLOBE_TIPS[globeTipsUsed];
+  globeTipsUsed++;
+  playPick();
+  const chip = document.createElement('div');
+  chip.className = 'flex items-start gap-2 bg-amber-50 rounded-2xl px-3 py-2 bounce-in';
+  chip.innerHTML = '<span class="text-xl">' + tip.emoji + '</span>' +
+    '<p class="text-sm font-bold leading-snug"><span class="text-amber-500">Tipp ' + globeTipsUsed + ':</span> ' + tip.text + '</p>';
+  document.getElementById('globe-tips-list').appendChild(chip);
+  applyCountryFilter(tip.keep);
+  const btn = document.getElementById('globe-tip-unlock');
+  if (globeTipsUsed >= GLOBE_TIPS.length) {
+    btn.classList.add('hidden-important');
+  } else {
+    btn.textContent = 'Tipp ' + (globeTipsUsed + 1) + ' freischalten 🔓';
+  }
+}
 
 function initGlobe() {
   const svg = d3.select('#globe-svg');
@@ -586,6 +697,8 @@ function initGlobe() {
           document.getElementById('finale-feedback').textContent = '';
         });
 
+      if (globeKeep) applyCountryFilter([...globeKeep]);
+
       // Ziehen = Kugel drehen
       const drag = d3.drag()
         .on('start', () => { stopAuto(); moved = 0; })
@@ -643,6 +756,7 @@ let selectedState = null;
 let wrongState = 0;
 let stateZoomBy = null;
 let stateMapReady = false;
+let dcHalo = null; // Leucht-Marker für das winzige D.C.
 
 /* ===== Trichter-Tipps: Jeder Tipp lässt nur noch die "keep"-Staaten übrig (FIPS-Codes) ===== */
 const FUNNEL_TIPS = [
@@ -679,7 +793,11 @@ function applyStateFilter(keep) {
   if (!stateMapReady) return; // wird nach dem Laden der Karte nachgeholt
   d3.select('#usmap-svg').selectAll('.state')
     .classed('state-disabled', d => !currentKeep.has(String(d.id)))
-    .classed('state-glow', d => currentKeep.has(String(d.id)));
+    .classed('state-glow', d => currentKeep.has(String(d.id)))
+    .classed('state-glow-strong', d => String(d.id) === TARGET_STATE_ID);
+  // Ping-Ring erst zeigen, wenn nur noch wenige Kandidaten übrig sind –
+  // sonst würde er D.C. schon ab Tipp 1 eindeutig verraten
+  if (dcHalo) dcHalo.g.style('display', currentKeep.size <= 3 ? null : 'none');
   // Falls der gerade ausgewählte Staat wegfällt: Auswahl zurücksetzen
   if (selectedState && !currentKeep.has(String(selectedState.id))) {
     selectedState = null;
@@ -737,11 +855,31 @@ function initStateMap() {
           document.getElementById('state-feedback').textContent = '';
         });
 
+      // Halo-Marker über D.C. – erscheint, sobald Tipps aktiv sind
+      const dcFeature = states.find(s => String(s.id) === TARGET_STATE_ID);
+      if (dcFeature) {
+        const [hx, hy] = path.centroid(dcFeature);
+        const haloG = g.append('g').style('display', 'none');
+        dcHalo = {
+          g: haloG,
+          dot: haloG.append('circle').attr('class', 'dc-halo-dot').attr('cx', hx).attr('cy', hy).attr('r', 6),
+          ring: haloG.append('circle').attr('class', 'dc-halo-ring').attr('cx', hx).attr('cy', hy).attr('r', 12)
+        };
+      }
+
       // Ziehen = verschieben, Pinch/Rad = zoomen (D.C. ist winzig – viel Zoom erlauben!)
       const zoom = d3.zoom()
         .scaleExtent([1, 40])
         .translateExtent([[0, 0], [975, 610]])
-        .on('zoom', e => g.attr('transform', e.transform));
+        .on('zoom', e => {
+          g.attr('transform', e.transform);
+          // Halo gegenskalieren, damit er auf dem Bildschirm immer gleich groß bleibt
+          if (dcHalo) {
+            const k = e.transform.k;
+            dcHalo.ring.attr('r', 12 / k).style('stroke-width', 3 / k);
+            dcHalo.dot.attr('r', 6 / k);
+          }
+        });
       svg.call(zoom).on('dblclick.zoom', null);
       stateZoomBy = f => svg.transition().duration(250).call(zoom.scaleBy, f);
 
@@ -784,9 +922,9 @@ function checkState() {
 
   const name = stateNameDE(selectedState);
   if (id === WASHINGTON_STATE_ID) {
-    feedback.textContent = 'Ha, Falle! Das ist der Bundesstaat Washington im Nordwesten – gesucht ist etwas an der Ostküste! 🙈';
+    feedback.textContent = 'Ha, Falle! Das ist der Bundesstaat Washington im Nordwesten. Gesucht ist etwas an der Ostküste! 🙈';
   } else if (tipsUsed >= FUNNEL_TIPS.length) {
-    feedback.textContent = 'Nein, ' + name + ' ist es nicht! Zoom ganz nah ran – das Ziel ist winzig! 🔍';
+    feedback.textContent = 'Nein, ' + name + ' ist es nicht! Zoom ganz nah ran, das Ziel ist winzig! 🔍';
   } else {
     feedback.textContent = 'Nein, ' + name + ' ist es leider nicht! Schalte dir unten einen Detektiv-Tipp frei! 💡';
   }
@@ -822,15 +960,13 @@ function checkFinale() {
 
   const name = nameDE(selectedCountry);
   if (id === AUSTRIA_ID) {
-    feedback.textContent = 'Haha, das ist Österreich – von hier fliegt ihr ja LOS! 🛫';
+    feedback.textContent = 'Haha, das ist Österreich! Von hier fliegt ihr ja los! 🛫';
   } else if (ENGLISH_IDS.includes(id)) {
-    feedback.textContent = 'So nah! In ' + name + ' spricht man Englisch – aber es ist ein anderes Land… ✈️';
-  } else if (wrongFinale >= 3) {
-    feedback.textContent = 'Tipp: Ein riesiges Land zwischen Atlantik und Pazifik – Freiheitsstatue! 🗽';
+    feedback.textContent = 'So nah! In ' + name + ' spricht man auch Englisch, aber es ist ein anderes Land! ✈️';
   } else if (wrongFinale >= 2) {
-    feedback.textContent = name + '? Denk an die Tipps: Englisch + Visum! 🛂';
+    feedback.textContent = 'Tipp: Ein riesiges Land zwischen Atlantik und Pazifik mit der Freiheitsstatue! 🗽';
   } else {
-    feedback.textContent = 'Nein, ' + name + ' ist es leider nicht! 🙈';
+    feedback.textContent = 'Nein, ' + name + ' ist es leider nicht! Schalte dir unten einen Detektiv-Tipp frei! 💡';
   }
 }
 
