@@ -147,6 +147,10 @@
     stroke: #fff;
     stroke-width: 1.5;
   }
+  .state.state-disabled {
+    fill: #e2e8f0;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body class="text-slate-800">
@@ -252,6 +256,14 @@
       </div>
       <button id="state-check" onclick="checkState()" disabled class="w-full py-4 rounded-2xl text-xl font-extrabold text-white bg-gradient-to-r from-rose-400 to-violet-500 shadow-xl shadow-rose-200 active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100">Prüfen 🔎</button>
       <p id="state-feedback" class="text-sm font-bold text-rose-500 min-h-5"></p>
+
+      <!-- Unlockable funnel hints: each one greys out the eliminated states -->
+      <div class="bg-white/85 backdrop-blur rounded-3xl shadow-xl shadow-amber-100 p-4 space-y-2 text-left">
+        <p class="text-sm font-extrabold text-center text-amber-500 uppercase tracking-wide">💡 Detektiv-Tipps zum Freischalten</p>
+        <p class="text-xs font-semibold text-center text-slate-400">Jeder Tipp grenzt die Suche ein – unmögliche Staaten werden auf der Karte grau.</p>
+        <div id="tips-list" class="space-y-2"></div>
+        <button id="tip-unlock" onclick="unlockTip()" class="w-full py-3 rounded-2xl text-lg font-extrabold text-white bg-gradient-to-r from-amber-400 to-orange-400 shadow-lg shadow-amber-100 active:scale-95 transition-transform">Tipp 1 freischalten 🔓</button>
+      </div>
     </div>
 
     <!-- Fallback if the map data can't load (no internet) -->
@@ -642,6 +654,70 @@ let wrongState = 0;
 let stateZoomBy = null;
 let stateMapReady = false;
 
+/* ===== Trichter-Tipps: Jeder Tipp lässt nur noch die "keep"-Staaten übrig (FIPS-Codes) ===== */
+const FUNNEL_TIPS = [
+  {
+    emoji: '🗺️',
+    text: '„Ich befinde mich in der östlichen Hälfte der USA, komplett östlich des Mississippi-Rivers.“',
+    // die 26 Staaten östlich des Mississippi + D.C.
+    keep: ['01', '09', '10', '11', '12', '13', '17', '18', '21', '23', '24', '25', '26', '28', '33', '34', '36', '37', '39', '42', '44', '45', '47', '50', '51', '54', '55']
+  },
+  {
+    emoji: '🕰️',
+    text: '„Ich liege in der östlichen Zeitzone (Eastern Time Zone), aber südlich der Grenze von Pennsylvania (der historischen Mason-Dixon-Linie).“',
+    // DE, MD, D.C., VA, WV, NC, SC, GA, FL, KY, TN
+    keep: ['10', '11', '12', '13', '21', '24', '37', '45', '47', '51', '54']
+  },
+  {
+    emoji: '🧩',
+    text: '„Ich bin von extrem wenig Nachbarn umgeben: Ich grenze an insgesamt nur zwei Bundesstaaten.“',
+    // Florida, South Carolina, D.C.
+    keep: ['12', '45', '11']
+  },
+  {
+    emoji: '🏛️',
+    text: '„Ich bin die absolute Fangfrage dieses Spiels: Ich bin nämlich gar kein eigener Bundesstaat, sondern ein Bundesdistrikt. In mir steht das Capitol und die National Mall!“',
+    keep: ['11']
+  }
+];
+
+let tipsUsed = 0;
+let currentKeep = null; // Set der aktuell noch erlaubten FIPS-Codes
+
+function applyStateFilter(keep) {
+  currentKeep = new Set(keep);
+  if (!stateMapReady) return; // wird nach dem Laden der Karte nachgeholt
+  d3.select('#usmap-svg').selectAll('.state')
+    .classed('state-disabled', d => !currentKeep.has(String(d.id)));
+  // Falls der gerade ausgewählte Staat wegfällt: Auswahl zurücksetzen
+  if (selectedState && !currentKeep.has(String(selectedState.id))) {
+    selectedState = null;
+    d3.select('#usmap-svg').selectAll('.state').classed('state-selected', false);
+    document.getElementById('state-picked').classList.add('hidden-important');
+    document.getElementById('state-check').disabled = true;
+    document.getElementById('state-feedback').textContent = '';
+  }
+}
+
+function unlockTip() {
+  if (tipsUsed >= FUNNEL_TIPS.length) return;
+  const tip = FUNNEL_TIPS[tipsUsed];
+  tipsUsed++;
+  playPick();
+  const chip = document.createElement('div');
+  chip.className = 'flex items-start gap-2 bg-amber-50 rounded-2xl px-3 py-2 bounce-in';
+  chip.innerHTML = '<span class="text-xl">' + tip.emoji + '</span>' +
+    '<p class="text-sm font-bold leading-snug"><span class="text-amber-500">Tipp ' + tipsUsed + ':</span> ' + tip.text + '</p>';
+  document.getElementById('tips-list').appendChild(chip);
+  applyStateFilter(tip.keep);
+  const btn = document.getElementById('tip-unlock');
+  if (tipsUsed >= FUNNEL_TIPS.length) {
+    btn.classList.add('hidden-important');
+  } else {
+    btn.textContent = 'Tipp ' + (tipsUsed + 1) + ' freischalten 🔓';
+  }
+}
+
 function initStateMap() {
   if (stateMapReady) return Promise.resolve();
   const svg = d3.select('#usmap-svg');
@@ -680,6 +756,7 @@ function initStateMap() {
 
       document.getElementById('usmap-loading').classList.add('hidden-important');
       stateMapReady = true;
+      if (currentKeep) applyStateFilter([...currentKeep]);
     });
 }
 
@@ -716,13 +793,11 @@ function checkState() {
 
   const name = stateNameDE(selectedState);
   if (id === WASHINGTON_STATE_ID) {
-    feedback.textContent = 'Ha, Falle! Das ist der Bundesstaat Washington im Nordwesten – gesucht ist die Hauptstadt an der Ostküste! 🏛️';
-  } else if (wrongState >= 3) {
-    feedback.textContent = 'Es ist gar kein richtiger Bundesstaat – ein winziger Fleck an der Ostküste. Zoom ganz nah ran! 🔍';
-  } else if (wrongState >= 2) {
-    feedback.textContent = 'Tipp: Dort wohnt der US-Präsident… 🏛️';
+    feedback.textContent = 'Ha, Falle! Das ist der Bundesstaat Washington im Nordwesten – gesucht ist etwas an der Ostküste! 🙈';
+  } else if (tipsUsed >= FUNNEL_TIPS.length) {
+    feedback.textContent = 'Nein, ' + name + ' ist es nicht! Zoom ganz nah ran – das Ziel ist winzig! 🔍';
   } else {
-    feedback.textContent = 'Nein, ' + name + ' ist es leider nicht! 🙈';
+    feedback.textContent = 'Nein, ' + name + ' ist es leider nicht! Schalte dir unten einen Detektiv-Tipp frei! 💡';
   }
 }
 
