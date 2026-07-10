@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
 <title>Das geheime Reise-Rätsel ✈️</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
@@ -348,6 +348,26 @@ function goTo(id) {
   window.scrollTo({ top: 0 });
   const input = target.querySelector('input');
   if (input && id !== 'screen-finale') setTimeout(() => input.focus(), 450);
+}
+
+/* ================= Sticky header vs. Handy-Tastatur ================= */
+// position:sticky klebt am Layout-Viewport. Öffnet sich die Tastatur, verschiebt
+// iOS Safari nur den sichtbaren (visuellen) Viewport – der Header wäre weg.
+// Darum: Header per Transform am visuellen Viewport festhalten.
+// (Android/Chrome braucht das nicht, dort löst es "interactive-widget=resizes-content" im Meta-Tag.)
+if (window.visualViewport) {
+  const header = document.getElementById('progress');
+  let raf = null;
+  const pinHeader = () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = null;
+      const offset = window.visualViewport.offsetTop;
+      header.style.transform = offset > 1 ? `translateY(${offset}px)` : '';
+    });
+  };
+  window.visualViewport.addEventListener('resize', pinHeader);
+  window.visualViewport.addEventListener('scroll', pinHeader);
 }
 
 /* ================= Sound effects (Web Audio) ================= */
