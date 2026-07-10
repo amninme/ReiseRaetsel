@@ -545,25 +545,28 @@ let wrongFinale = 0;
 let globeRedraw = null;
 let globeZoomBy = null;
 
-/* ===== Trichter-Tipps für die Weltkugel (IDs = ISO 3166-1 numerisch, dreistellig) ===== */
+/* ===== Trichter-Tipps für die Weltkugel (IDs = ISO 3166-1 numerisch, dreistellig) =====
+   Reihenfolge vom größten zum kleinsten Filter: Visum (77 Länder) → Englisch (25) → NATO (3) */
 const NATO_IDS = ['008', '056', '100', '124', '191', '203', '208', '233', '246', '250', '276', '300', '348', '352', '380', '428', '440', '442', '499', '528', '578', '616', '620', '642', '703', '705', '724', '752', '792', '807', '826', '840'];
+// Länder, für die man von Österreich aus ein Visum bzw. eine Einreisegenehmigung braucht
+const VISA_IDS = ['834', '732', '124', '840', '598', '360', '180', '706', '404', '729', '148', '643', '740', '630', '192', '716', '516', '466', '478', '204', '562', '566', '120', '768', '288', '384', '324', '624', '430', '694', '854', '140', '178', '266', '226', '454', '508', '108', '422', '450', '275', '270', '012', '400', '414', '368', '512', '116', '418', '104', '704', '408', '356', '050', '064', '524', '586', '004', '795', '364', '760', '792', '554', '036', '144', '826', '031', '232', '887', '682', '818', '434', '231', '262', '800', '646', '728'];
+// Länder mit Englisch als Amtssprache
+const EN_SPEAKING_IDS = ['840', '826', '372', '124', '036', '554', '566', '288', '404', '800', '834', '646', '108', '728', '729', '716', '894', '454', '516', '072', '710', '426', '748', '430', '694', '270', '120', '388', '780', '044', '084', '328', '630', '356', '586', '608', '598', '242', '090', '548'];
 const GLOBE_TIPS = [
   {
-    emoji: '🛡️',
-    text: 'Es ist ein NATO-Land! Alle 32 NATO-Länder leuchten jetzt.',
-    keep: NATO_IDS
-  },
-  {
     emoji: '🛂',
-    text: 'Von Österreich aus braucht man ein Visum bzw. eine Einreisegenehmigung. Nur noch diese Länder leuchten!',
-    // USA, Kanada, Großbritannien, Türkei
-    keep: ['840', '124', '826', '792']
+    text: 'Von Österreich aus braucht man ein Visum bzw. eine Einreisegenehmigung. Alle diese Länder leuchten jetzt!',
+    keep: VISA_IDS
   },
   {
     emoji: '🗣️',
-    text: 'Im Zielland spricht man Englisch!',
-    // USA, Kanada, Großbritannien
-    keep: ['840', '124', '826']
+    text: 'Im Zielland spricht man Englisch! Jetzt leuchten nur noch englischsprachige Visum-Länder.',
+    keep: EN_SPEAKING_IDS
+  },
+  {
+    emoji: '🛡️',
+    text: 'Es ist ein NATO-Land! Nur noch drei Kandidaten leuchten.',
+    keep: NATO_IDS
   }
 ];
 
@@ -595,7 +598,9 @@ function unlockGlobeTip() {
   chip.innerHTML = '<span class="text-xl">' + tip.emoji + '</span>' +
     '<p class="text-sm font-bold leading-snug"><span class="text-amber-500">Tipp ' + globeTipsUsed + ':</span> ' + tip.text + '</p>';
   document.getElementById('globe-tips-list').appendChild(chip);
-  applyCountryFilter(tip.keep);
+  // Trichter: neuen Tipp mit dem bisherigen Filter schneiden, es wird nur enger
+  const keep = globeKeep ? tip.keep.filter(id => globeKeep.has(id)) : tip.keep;
+  applyCountryFilter(keep);
   const btn = document.getElementById('globe-tip-unlock');
   if (globeTipsUsed >= GLOBE_TIPS.length) {
     btn.classList.add('hidden-important');
