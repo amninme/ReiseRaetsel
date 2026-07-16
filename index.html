@@ -245,10 +245,6 @@
         <span class="text-2xl">🛡️</span>
         <p class="font-bold text-sm leading-snug">Aus dem Rätsel davor: Es ist ein <span class="font-black text-emerald-600">NATO-Land</span>!</p>
       </div>
-      <div class="flex items-center gap-3 bg-violet-50 rounded-2xl px-4 py-3">
-        <span class="text-2xl">🗣️</span>
-        <p class="font-bold text-sm leading-snug">Im Zielland spricht man <span class="font-black text-violet-600">Englisch</span>.</p>
-      </div>
       <div class="flex items-center gap-3 bg-sky-50 rounded-2xl px-4 py-3">
         <span class="text-2xl">🛂</span>
         <p class="font-bold text-sm leading-snug">Von <span class="font-black text-sky-600">Österreich</span> aus braucht man ein <span class="font-black text-sky-600">VISA</span>!</p>
@@ -510,7 +506,6 @@ function checkAnswer(i) {
 /* ================= Globe (finale) ================= */
 // IDs im Kartenmaterial sind dreistellige ISO-Codes mit führenden Nullen ("040", "036", …)
 const TARGET_ID = '840'; // USA (ISO 3166-1 numerisch)
-const ENGLISH_IDS = ['826', '124', '036', '554', '372']; // UK, Kanada, Australien, Neuseeland, Irland
 const AUSTRIA_ID = '040';
 
 // Deutsche Namen für häufige Länder (Fallback: englischer Name aus dem Kartenmaterial)
@@ -546,12 +541,10 @@ let globeRedraw = null;
 let globeZoomBy = null;
 
 /* ===== Trichter-Tipps für die Weltkugel (IDs = ISO 3166-1 numerisch, dreistellig) =====
-   Reihenfolge vom größten zum kleinsten Filter: Visum (77 Länder) → Englisch (25) → NATO (3) */
+   Reihenfolge vom größten zum kleinsten Filter: Visum (77 Länder) → NATO (4) */
 const NATO_IDS = ['008', '056', '100', '124', '191', '203', '208', '233', '246', '250', '276', '300', '348', '352', '380', '428', '440', '442', '499', '528', '578', '616', '620', '642', '703', '705', '724', '752', '792', '807', '826', '840'];
 // Länder, für die man von Österreich aus ein Visum bzw. eine Einreisegenehmigung braucht
 const VISA_IDS = ['834', '732', '124', '840', '598', '360', '180', '706', '404', '729', '148', '643', '740', '630', '192', '716', '516', '466', '478', '204', '562', '566', '120', '768', '288', '384', '324', '624', '430', '694', '854', '140', '178', '266', '226', '454', '508', '108', '422', '450', '275', '270', '012', '400', '414', '368', '512', '116', '418', '104', '704', '408', '356', '050', '064', '524', '586', '004', '795', '364', '760', '792', '554', '036', '144', '826', '031', '232', '887', '682', '818', '434', '231', '262', '800', '646', '728'];
-// Länder mit Englisch als Amtssprache
-const EN_SPEAKING_IDS = ['840', '826', '372', '124', '036', '554', '566', '288', '404', '800', '834', '646', '108', '728', '729', '716', '894', '454', '516', '072', '710', '426', '748', '430', '694', '270', '120', '388', '780', '044', '084', '328', '630', '356', '586', '608', '598', '242', '090', '548'];
 const GLOBE_TIPS = [
   {
     emoji: '🛂',
@@ -559,13 +552,8 @@ const GLOBE_TIPS = [
     keep: VISA_IDS
   },
   {
-    emoji: '🗣️',
-    text: 'Im Zielland spricht man Englisch! Jetzt leuchten nur noch englischsprachige Visum-Länder.',
-    keep: EN_SPEAKING_IDS
-  },
-  {
     emoji: '🛡️',
-    text: 'Es ist ein NATO-Land! Nur noch drei Kandidaten leuchten.',
+    text: 'Es ist ein NATO-Land! Nur noch eine Handvoll Kandidaten leuchten.',
     keep: NATO_IDS
   }
 ];
@@ -966,8 +954,6 @@ function checkFinale() {
   const name = nameDE(selectedCountry);
   if (id === AUSTRIA_ID) {
     feedback.textContent = 'Haha, das ist Österreich! Von hier fliegt ihr ja los! 🛫';
-  } else if (ENGLISH_IDS.includes(id)) {
-    feedback.textContent = 'So nah! In ' + name + ' spricht man auch Englisch, aber es ist ein anderes Land! ✈️';
   } else if (wrongFinale >= 2) {
     feedback.textContent = 'Tipp: Ein riesiges Land zwischen Atlantik und Pazifik mit der Freiheitsstatue! 🗽';
   } else {
@@ -1008,7 +994,7 @@ function checkFinaleText() {
       input.classList.remove('shake');
       void input.offsetWidth;
       input.classList.add('shake');
-      feedback.textContent = 'Fast! Denk an die Tipps: Englisch + Visum von Österreich aus… 🗽';
+      feedback.textContent = 'Fast! Denk an den Tipp: Visum von Österreich aus nötig… 🗽';
       input.select();
     }
   } else {
